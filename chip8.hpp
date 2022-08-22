@@ -30,6 +30,9 @@ class chip8
     void load_game(std::string const &name);
     void emulate_cycle();
     void set_keys();
+
+    void disp_clear();
+    BYTE rand();
 };
 
 /* Prototypes */

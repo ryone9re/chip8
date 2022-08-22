@@ -1,6 +1,8 @@
 #include "chip8.hpp"
 #include <algorithm>
 #include <fstream>
+#include <iostream>
+#include <random>
 
 const BYTE chip8_fontset[0x50] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -60,10 +62,185 @@ void chip8::emulate_cycle()
     switch (this->opcode & 0xF000)
     {
 
-    case 0xA000: // ANNN: Sets I to address NNN
+    case 0x0000: {
+        switch (this->opcode & 0x000F)
+        {
+        case 0x0000: {
+            this->disp_clear();
+            this->pc += 2;
+            break;
+        }
+        case 0x000E: {
+            // TODO Returns from subroutine
+            break;
+        }
+        default:
+            std::cout << "Unknown opcode: 0x%X" << this->opcode << std::endl;
+        }
+        break;
+    }
+
+    case 0x1000: {
+        this->pc = this->opcode & 0x0FFF;
+        break;
+    }
+
+    case 0x2000: {
+        this->stack[this->sp++] = this->pc;
+        this->pc = (this->opcode & 0x0FFF);
+        break;
+    }
+
+    case 0x3000: {
+        int x = (this->opcode & 0x0F00) >> 2;
+        if (this->V[x] == (this->opcode & 0x00FF))
+            this->pc += 2;
+        this->pc += 2;
+        break;
+    }
+
+    case 0x4000: {
+        int x = (this->opcode & 0x0F00) >> 2;
+        if (this->V[x] != (this->opcode & 0x00FF))
+            this->pc += 2;
+        this->pc += 2;
+        break;
+    }
+
+    case 0x5000: {
+        int x = (this->opcode & 0x0F00) >> 2;
+        int y = (this->opcode & 0x00F0) >> 1;
+        if (this->V[x] == this->V[y])
+            this->pc += 2;
+        this->pc += 2;
+        break;
+    }
+
+    case 0x6000: {
+        int x = (this->opcode & 0x0F00) >> 2;
+        this->V[x] = (this->opcode & 0x00FF);
+        this->pc += 2;
+        break;
+    }
+
+    case 0x7000: {
+        int x = (this->opcode & 0x0F00) >> 2;
+        this->V[x] += (this->opcode & 0x00FF);
+        this->pc += 2;
+        break;
+    }
+
+    case 0x8000: {
+        // TODO
+        break;
+    }
+
+    case 0x9000: {
+        int x = (this->opcode & 0x0F00) >> 2;
+        int y = (this->opcode & 0x00F0) >> 1;
+        if (this->V[x] != this->V[y])
+            this->pc += 2;
+        this->pc += 2;
+        break;
+    }
+
+    case 0xA000: {
         this->I = this->opcode & 0x0FFF;
         this->pc += 2;
         break;
+    }
+
+    case 0xB000: {
+        this->pc = this->V[0] + (this->opcode & 0x0FFF);
+        break;
+    }
+
+    case 0xC000: {
+        int x = (this->opcode & 0x0F00) >> 2;
+        this->V[x] = this->rand() & (this->opcode & 0x00FF);
+        this->pc += 2;
+        break;
+    }
+
+    case 0xD000: {
+        // TODO
+        break;
+    }
+
+    case 0xE000: {
+        // TODO
+        switch (this->opcode & 0x00FF)
+        {
+        case 0x009E: {
+            break;
+        }
+        case 0x00A1: {
+            break;
+        }
+        default:
+            std::cout << "Unknown opcode: 0x%X" << this->opcode << std::endl;
+        }
+        break;
+    }
+
+    case 0xF000: {
+        // TODO
+        switch (this->opcode & 0x00F0)
+        {
+
+        case 0x0000: {
+            switch (this->opcode & 0x000F)
+            {
+            case 0x0007: {
+                break;
+            }
+            case 0x000A: {
+                break;
+            }
+            default:
+                std::cout << "Unknown opcode: 0x%X" << this->opcode << std::endl;
+            }
+            break;
+        }
+
+        case 0x0010: {
+            switch (this->opcode & 0x000F)
+            {
+            case 0x0005: {
+                break;
+            }
+            case 0x0008: {
+                break;
+            }
+            case 0x000E: {
+                break;
+            }
+            default:
+                std::cout << "Unknown opcode: 0x%X" << this->opcode << std::endl;
+            }
+        }
+
+        case 0x0020: {
+            break;
+        }
+
+        case 0x0030: {
+            break;
+        }
+
+        case 0x0050: {
+            break;
+        }
+
+        case 0x0060: {
+            break;
+        }
+
+        default:
+            std::cout << "Unknown opcode: 0x%X" << this->opcode << std::endl;
+        }
+        break;
+    }
 
     default:
         std::cout << "Unknown opcode: 0x%X" << this->opcode << std::endl;
@@ -83,4 +260,18 @@ void chip8::emulate_cycle()
 
 void chip8::set_keys()
 {
+}
+
+void chip8::disp_clear()
+{
+    std::fill(this->gfx.begin(), this->gfx.end(), 0);
+}
+
+BYTE chip8::rand()
+{
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, 255);
+
+    return dist(rng);
 }
