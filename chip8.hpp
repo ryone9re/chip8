@@ -24,12 +24,13 @@ class chip8
     std::array<BYTE, 16> key;      // Keyboard Matrix
 
   public:
-    bool drawFlag;
+    bool draw_flag;
 
     void initialize();
     void load_game(std::string const &name);
     void emulate_cycle();
     void set_keys();
+    BYTE get_keys();
 
     void disp_clear();
     BYTE rand();

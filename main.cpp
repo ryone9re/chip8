@@ -1,11 +1,11 @@
 #include "chip8.hpp"
 
-chip8 machine;
-
 int main(int argc, char **argv)
 {
     if (argc != 2)
         exit_with_errmsg();
+
+    chip8 machine;
 
     machine.initialize();
     machine.load_game(argv[1]);
@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     {
         machine.emulate_cycle();
 
-        if (machine.drawFlag)
+        if (machine.draw_flag)
             ; // draw
 
         machine.set_keys();

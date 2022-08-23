@@ -42,7 +42,7 @@ void chip8::initialize()
     this->delay_timer = 0;
     this->sound_timer = 0;
 
-    this->drawFlag = 0;
+    this->draw_flag = 0;
 }
 
 void chip8::load_game(std::string const &name)
@@ -71,7 +71,9 @@ void chip8::emulate_cycle()
             break;
         }
         case 0x000E: {
-            // TODO Returns from subroutine
+            this->sp -= 1;
+            this->pc = this->stack[this->sp];
+            this->pc += 2;
             break;
         }
         default:
@@ -92,7 +94,7 @@ void chip8::emulate_cycle()
     }
 
     case 0x3000: {
-        int x = (this->opcode & 0x0F00) >> 8;
+        BYTE x = (this->opcode & 0x0F00) >> 8;
         if (this->V[x] == (this->opcode & 0x00FF))
             this->pc += 2;
         this->pc += 2;
@@ -100,7 +102,7 @@ void chip8::emulate_cycle()
     }
 
     case 0x4000: {
-        int x = (this->opcode & 0x0F00) >> 8;
+        BYTE x = (this->opcode & 0x0F00) >> 8;
         if (this->V[x] != (this->opcode & 0x00FF))
             this->pc += 2;
         this->pc += 2;
@@ -108,8 +110,8 @@ void chip8::emulate_cycle()
     }
 
     case 0x5000: {
-        int x = (this->opcode & 0x0F00) >> 8;
-        int y = (this->opcode & 0x00F0) >> 4;
+        BYTE x = (this->opcode & 0x0F00) >> 8;
+        BYTE y = (this->opcode & 0x00F0) >> 4;
         if (this->V[x] == this->V[y])
             this->pc += 2;
         this->pc += 2;
@@ -117,27 +119,104 @@ void chip8::emulate_cycle()
     }
 
     case 0x6000: {
-        int x = (this->opcode & 0x0F00) >> 8;
+        BYTE x = (this->opcode & 0x0F00) >> 8;
         this->V[x] = (this->opcode & 0x00FF);
         this->pc += 2;
         break;
     }
 
     case 0x7000: {
-        int x = (this->opcode & 0x0F00) >> 8;
+        BYTE x = (this->opcode & 0x0F00) >> 8;
         this->V[x] += (this->opcode & 0x00FF);
         this->pc += 2;
         break;
     }
 
     case 0x8000: {
-        // TODO
+        switch (this->opcode & 0x000F)
+        {
+        case 0x0000: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            BYTE y = (this->opcode & 0x00F0) >> 4;
+            this->V[x] = this->V[y];
+            this->pc += 2;
+            break;
+        }
+        case 0x0001: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            BYTE y = (this->opcode & 0x00F0) >> 4;
+            this->V[x] |= this->V[y];
+            this->pc += 2;
+            break;
+        }
+        case 0x0002: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            BYTE y = (this->opcode & 0x00F0) >> 4;
+            this->V[x] &= this->V[y];
+            this->pc += 2;
+            break;
+        }
+        case 0x0003: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            BYTE y = (this->opcode & 0x00F0) >> 4;
+            this->V[x] ^= this->V[y];
+            this->pc += 2;
+            break;
+        }
+        case 0x0004: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            BYTE y = (this->opcode & 0x00F0) >> 4;
+            if (this->V[y] > (0xFF - this->V[x]))
+                this->V[0xF] = 1;
+            else
+                this->V[0xF] = 0;
+            this->V[x] += this->V[y];
+            this->pc += 2;
+            break;
+        }
+        case 0x0005: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            BYTE y = (this->opcode & 0x00F0) >> 4;
+            if (this->V[y] > this->V[x])
+                this->V[0xF] = 1;
+            else
+                this->V[0xF] = 0;
+            this->V[x] -= this->V[y];
+            this->pc += 2;
+            break;
+        }
+        case 0x0006: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            this->V[x] >>= 1;
+            this->pc += 2;
+            break;
+        }
+        case 0x0007: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            BYTE y = (this->opcode & 0x00F0) >> 4;
+            if (this->V[x] > this->V[y])
+                this->V[0xF] = 1;
+            else
+                this->V[0xF] = 0;
+            this->V[x] = this->V[y] - this->V[x];
+            this->pc += 2;
+            break;
+        }
+        case 0x000E: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            this->V[x] <<= 1;
+            this->pc += 2;
+            break;
+        }
+        default:
+            std::cout << "Unknown opcode: 0x%X" << this->opcode << std::endl;
+        }
         break;
     }
 
     case 0x9000: {
-        int x = (this->opcode & 0x0F00) >> 8;
-        int y = (this->opcode & 0x00F0) >> 4;
+        BYTE x = (this->opcode & 0x0F00) >> 8;
+        BYTE y = (this->opcode & 0x00F0) >> 4;
         if (this->V[x] != this->V[y])
             this->pc += 2;
         this->pc += 2;
@@ -156,7 +235,7 @@ void chip8::emulate_cycle()
     }
 
     case 0xC000: {
-        int x = (this->opcode & 0x0F00) >> 8;
+        BYTE x = (this->opcode & 0x0F00) >> 8;
         this->V[x] = this->rand() & (this->opcode & 0x00FF);
         this->pc += 2;
         break;
@@ -184,7 +263,6 @@ void chip8::emulate_cycle()
     }
 
     case 0xF000: {
-        // TODO
         switch (this->opcode & 0x00F0)
         {
 
@@ -192,9 +270,15 @@ void chip8::emulate_cycle()
             switch (this->opcode & 0x000F)
             {
             case 0x0007: {
+                BYTE x = (this->opcode & 0x0F00) >> 8;
+                this->V[x] = this->delay_timer;
+                this->pc += 2;
                 break;
             }
             case 0x000A: {
+                BYTE x = (this->opcode & 0x0F00) >> 8;
+                this->V[x] = this->get_keys();
+                this->pc += 2;
                 break;
             }
             default:
@@ -207,12 +291,21 @@ void chip8::emulate_cycle()
             switch (this->opcode & 0x000F)
             {
             case 0x0005: {
+                BYTE x = (this->opcode & 0x0F00) >> 8;
+                this->delay_timer = this->V[x];
+                this->pc += 2;
                 break;
             }
             case 0x0008: {
+                BYTE x = (this->opcode & 0x0F00) >> 8;
+                this->sound_timer = this->V[x];
+                this->pc += 2;
                 break;
             }
             case 0x000E: {
+                BYTE x = (this->opcode & 0x0F00) >> 8;
+                this->I += this->V[x];
+                this->pc += 2;
                 break;
             }
             default:
@@ -221,18 +314,35 @@ void chip8::emulate_cycle()
         }
 
         case 0x0020: {
+            // TODO
             break;
         }
 
         case 0x0030: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            BYTE top = this->V[x] / 100;
+            BYTE mid = (this->V[x] % 100) / 10;
+            BYTE bot = (this->V[x] % 100) % 10;
+            this->memory[this->I] = top;
+            this->memory[this->I + 1] = mid;
+            this->memory[this->I + 2] = bot;
+            this->pc += 2;
             break;
         }
 
         case 0x0050: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            for (int i = 0; i <= x; i++)
+                this->V[i] = this->memory[i + this->I];
+            this->pc += 2;
             break;
         }
 
         case 0x0060: {
+            BYTE x = (this->opcode & 0x0F00) >> 8;
+            for (int i = 0; i <= x; i++)
+                this->memory[i + this->I] = this->V[i];
+            this->pc += 2;
             break;
         }
 
@@ -260,6 +370,11 @@ void chip8::emulate_cycle()
 
 void chip8::set_keys()
 {
+}
+
+BYTE chip8::get_keys()
+{
+    return 1;
 }
 
 void chip8::disp_clear()
