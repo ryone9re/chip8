@@ -92,7 +92,7 @@ void chip8::emulate_cycle()
     }
 
     case 0x3000: {
-        int x = (this->opcode & 0x0F00) >> 2;
+        int x = (this->opcode & 0x0F00) >> 8;
         if (this->V[x] == (this->opcode & 0x00FF))
             this->pc += 2;
         this->pc += 2;
@@ -100,7 +100,7 @@ void chip8::emulate_cycle()
     }
 
     case 0x4000: {
-        int x = (this->opcode & 0x0F00) >> 2;
+        int x = (this->opcode & 0x0F00) >> 8;
         if (this->V[x] != (this->opcode & 0x00FF))
             this->pc += 2;
         this->pc += 2;
@@ -108,8 +108,8 @@ void chip8::emulate_cycle()
     }
 
     case 0x5000: {
-        int x = (this->opcode & 0x0F00) >> 2;
-        int y = (this->opcode & 0x00F0) >> 1;
+        int x = (this->opcode & 0x0F00) >> 8;
+        int y = (this->opcode & 0x00F0) >> 4;
         if (this->V[x] == this->V[y])
             this->pc += 2;
         this->pc += 2;
@@ -117,14 +117,14 @@ void chip8::emulate_cycle()
     }
 
     case 0x6000: {
-        int x = (this->opcode & 0x0F00) >> 2;
+        int x = (this->opcode & 0x0F00) >> 8;
         this->V[x] = (this->opcode & 0x00FF);
         this->pc += 2;
         break;
     }
 
     case 0x7000: {
-        int x = (this->opcode & 0x0F00) >> 2;
+        int x = (this->opcode & 0x0F00) >> 8;
         this->V[x] += (this->opcode & 0x00FF);
         this->pc += 2;
         break;
@@ -136,8 +136,8 @@ void chip8::emulate_cycle()
     }
 
     case 0x9000: {
-        int x = (this->opcode & 0x0F00) >> 2;
-        int y = (this->opcode & 0x00F0) >> 1;
+        int x = (this->opcode & 0x0F00) >> 8;
+        int y = (this->opcode & 0x00F0) >> 4;
         if (this->V[x] != this->V[y])
             this->pc += 2;
         this->pc += 2;
@@ -156,7 +156,7 @@ void chip8::emulate_cycle()
     }
 
     case 0xC000: {
-        int x = (this->opcode & 0x0F00) >> 2;
+        int x = (this->opcode & 0x0F00) >> 8;
         this->V[x] = this->rand() & (this->opcode & 0x00FF);
         this->pc += 2;
         break;
