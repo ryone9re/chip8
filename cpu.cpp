@@ -1,5 +1,4 @@
 #include "chip8.hpp"
-#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -26,14 +25,14 @@ const BYTE chip8_fontset[0x50] = {
 void chip8::initialize()
 {
     opcode = 0;
-    std::fill(memory.begin(), memory.end(), 0);
-    std::fill(V.begin(), V.end(), 0);
+    memory.fill(0);
+    V.fill(0);
     I = 0;
     pc = 0;
-    std::fill(gfx.begin(), gfx.end(), 0);
-    std::fill(stack.begin(), stack.end(), 0);
+    gfx.fill({});
+    stack.fill(0);
     sp = 0;
-    std::fill(key.begin(), key.end(), 0);
+    key.fill(0);
 
     // Load fontset
     for (int i = 0; i < 80; i++)
@@ -42,7 +41,7 @@ void chip8::initialize()
     delay_timer = 0;
     sound_timer = 0;
 
-    draw_flag = 0;
+    draw_flag = true;
 }
 
 void chip8::load_game(std::string const &name)
@@ -77,7 +76,7 @@ void chip8::emulate_cycle()
             break;
         }
         default:
-            std::cout << "Unknown opcode: 0x%X" << opcode << std::endl;
+            std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
         }
         break;
     }
@@ -209,7 +208,7 @@ void chip8::emulate_cycle()
             break;
         }
         default:
-            std::cout << "Unknown opcode: 0x%X" << opcode << std::endl;
+            std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
         }
         break;
     }
@@ -242,7 +241,16 @@ void chip8::emulate_cycle()
     }
 
     case 0xD000: {
-        // TODO
+        BYTE x = (opcode & 0x0F00) >> 8;
+        BYTE y = (opcode & 0x00F0) >> 4;
+        BYTE n = (opcode & 0x000F);
+        for (BYTE i = 0; i < n; i++)
+        {
+            V[0xF] = (gfx[V[y]][V[x]] & memory[I + i]) > 0;
+            gfx[V[y]][V[x]] ^= memory[I + i];
+        }
+        draw_flag = true;
+        pc += 2;
         break;
     }
 
@@ -251,20 +259,20 @@ void chip8::emulate_cycle()
         {
         case 0x009E: {
             BYTE x = (opcode & 0x0F00) >> 8;
-            if (get_keys() == V[x])
+            if (key[V[x]] != 0)
                 pc += 2;
             pc += 2;
             break;
         }
         case 0x00A1: {
             BYTE x = (opcode & 0x0F00) >> 8;
-            if (get_keys() != V[x])
+            if (key[V[x]] == 0)
                 pc += 2;
             pc += 2;
             break;
         }
         default:
-            std::cout << "Unknown opcode: 0x%X" << opcode << std::endl;
+            std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
         }
         break;
     }
@@ -289,7 +297,7 @@ void chip8::emulate_cycle()
                 break;
             }
             default:
-                std::cout << "Unknown opcode: 0x%X" << opcode << std::endl;
+                std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
             }
             break;
         }
@@ -316,7 +324,7 @@ void chip8::emulate_cycle()
                 break;
             }
             default:
-                std::cout << "Unknown opcode: 0x%X" << opcode << std::endl;
+                std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
             }
         }
 
@@ -356,13 +364,13 @@ void chip8::emulate_cycle()
         }
 
         default:
-            std::cout << "Unknown opcode: 0x%X" << opcode << std::endl;
+            std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
         }
         break;
     }
 
     default:
-        std::cout << "Unknown opcode: 0x%X" << opcode << std::endl;
+        std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
     }
 
     // Update timers
@@ -372,23 +380,19 @@ void chip8::emulate_cycle()
     if (sound_timer > 0)
     {
         if (sound_timer == 1)
-            std::cout << "BEEP!" << std::endl;
+            std::clog << "BEEP!" << std::endl;
         sound_timer -= 1;
     }
 }
 
 void chip8::set_keys()
 {
-}
-
-BYTE chip8::get_keys()
-{
-    return 1;
+    // TODO
 }
 
 void chip8::disp_clear()
 {
-    std::fill(gfx.begin(), gfx.end(), 0);
+    gfx.fill({});
 }
 
 BYTE chip8::rand()
