@@ -28,7 +28,7 @@ void chip8::initialize()
     memory.fill(0);
     V.fill(0);
     I = 0;
-    pc = 0;
+    pc = 0x200;
     gfx.fill({});
     stack.fill(0);
     sp = 0;
@@ -65,7 +65,8 @@ void chip8::emulate_cycle()
         switch (opcode & 0x000F)
         {
         case 0x0000: {
-            disp_clear();
+            gfx.fill({});
+            draw_flag = true;
             pc += 2;
             break;
         }
@@ -76,7 +77,7 @@ void chip8::emulate_cycle()
             break;
         }
         default:
-            std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
+            std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
         }
         break;
     }
@@ -208,7 +209,7 @@ void chip8::emulate_cycle()
             break;
         }
         default:
-            std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
+            std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
         }
         break;
     }
@@ -244,6 +245,7 @@ void chip8::emulate_cycle()
         BYTE x = (opcode & 0x0F00) >> 8;
         BYTE y = (opcode & 0x00F0) >> 4;
         BYTE n = (opcode & 0x000F);
+        V[0xF] = 0;
         for (BYTE i = 0; i < n; i++)
         {
             V[0xF] = (gfx[V[y]][V[x]] & memory[I + i]) > 0;
@@ -272,7 +274,7 @@ void chip8::emulate_cycle()
             break;
         }
         default:
-            std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
+            std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
         }
         break;
     }
@@ -292,12 +294,21 @@ void chip8::emulate_cycle()
             }
             case 0x000A: {
                 BYTE x = (opcode & 0x0F00) >> 8;
-                V[x] = get_keys();
-                pc += 2;
+                bool is_keypress = false;
+                for (BYTE i = 0; i < 16; i++)
+                {
+                    if (key[i] != 0)
+                    {
+                        V[x] = i;
+                        is_keypress = true;
+                    }
+                }
+                if (is_keypress)
+                    pc += 2;
                 break;
             }
             default:
-                std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
+                std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
             }
             break;
         }
@@ -319,12 +330,13 @@ void chip8::emulate_cycle()
             }
             case 0x000E: {
                 BYTE x = (opcode & 0x0F00) >> 8;
+                V[0xF] = (I + V[x]) > 0x0FFF;
                 I += V[x];
                 pc += 2;
                 break;
             }
             default:
-                std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
+                std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
             }
         }
 
@@ -350,7 +362,8 @@ void chip8::emulate_cycle()
         case 0x0050: {
             BYTE x = (opcode & 0x0F00) >> 8;
             for (int i = 0; i <= x; i++)
-                V[i] = memory[i + I];
+                memory[I + i] = V[i];
+            I += x + 1;
             pc += 2;
             break;
         }
@@ -358,19 +371,20 @@ void chip8::emulate_cycle()
         case 0x0060: {
             BYTE x = (opcode & 0x0F00) >> 8;
             for (int i = 0; i <= x; i++)
-                memory[i + I] = V[i];
+                V[i] = memory[I + i];
+            I += x + 1;
             pc += 2;
             break;
         }
 
         default:
-            std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
+            std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
         }
         break;
     }
 
     default:
-        std::clog << "Unknown opcode: 0x%X" << opcode << std::endl;
+        std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
     }
 
     // Update timers
@@ -385,14 +399,40 @@ void chip8::emulate_cycle()
     }
 }
 
-void chip8::set_keys()
+void chip8::set_keys(BYTE k, BYTE status)
 {
-    // TODO
-}
-
-void chip8::disp_clear()
-{
-    gfx.fill({});
+    if (k == '1')
+        key[0x1] = status;
+    else if (k == '2')
+        key[0x2] = status;
+    else if (k == '3')
+        key[0x3] = status;
+    else if (k == '4')
+        key[0xC] = status;
+    else if (k == 'q')
+        key[0x4] = status;
+    else if (k == 'w')
+        key[0x5] = status;
+    else if (k == 'e')
+        key[0x6] = status;
+    else if (k == 'r')
+        key[0xD] = status;
+    else if (k == 'a')
+        key[0x7] = status;
+    else if (k == 's')
+        key[0x8] = status;
+    else if (k == 'd')
+        key[0x9] = status;
+    else if (k == 'f')
+        key[0xE] = status;
+    else if (k == 'z')
+        key[0xA] = status;
+    else if (k == 'x')
+        key[0x0] = status;
+    else if (k == 'c')
+        key[0xB] = status;
+    else if (k == 'v')
+        key[0xF] = status;
 }
 
 BYTE chip8::rand()
