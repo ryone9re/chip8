@@ -248,8 +248,15 @@ void chip8::emulate_cycle()
         V[0xF] = 0;
         for (BYTE i = 0; i < n; i++)
         {
-            V[0xF] = (gfx[V[y]][V[x]] & memory[I + i]) > 0;
-            gfx[V[y]][V[x]] ^= memory[I + i];
+            gfx[V[y] + i][V[x]] ^= ((memory[I + i] & 0x80) > 0);
+            gfx[V[y] + i][V[x] + 1] ^= ((memory[I + i] & 0x40) > 0);
+            gfx[V[y] + i][V[x] + 2] ^= ((memory[I + i] & 0x20) > 0);
+            gfx[V[y] + i][V[x] + 3] ^= ((memory[I + i] & 0x10) > 0);
+
+            V[0xF] = (gfx[V[y] + i][V[x]] && ((memory[I + i] & 0x80) > 0)) > 0 ||
+                     (gfx[V[y] + i][V[x] + 1] && ((memory[I + i] & 0x40) > 0)) > 0 ||
+                     (gfx[V[y] + i][V[x] + 2] && ((memory[I + i] & 0x20) > 0)) > 0 ||
+                     (gfx[V[y] + i][V[x] + 3] && ((memory[I + i] & 0x10) > 0)) > 0;
         }
         draw_flag = true;
         pc += 2;

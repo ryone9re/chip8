@@ -23,6 +23,7 @@ int main(int argc, char **argv)
     glutCreateWindow("chip8 emulator");
 
     glutDisplayFunc(display);
+    glutIdleFunc(display);
     glutKeyboardFunc(keyboardDown);
     glutKeyboardUpFunc(keyboardUp);
 
@@ -33,11 +34,13 @@ int main(int argc, char **argv)
 
 void draw_pixel(int x, int y)
 {
+    float xx = (float)x / 32.0f - 1;
+    float yy = -((float)y / 16.0f) + 1;
     glBegin(GL_QUADS);
-    glVertex2f((x * 0.03125 - 1), (y * 0.0625 - 1));
-    glVertex2f((x * 0.03125 - 1) + 0.03125, (y * 0.0625 - 1));
-    glVertex2f((x * 0.03125 - 1) + 0.03125, (y * 0.0625 - 1) + 0.0625);
-    glVertex2f((x * 0.03125 - 1), (y * 0.0625 - 1) + 0.0625);
+    glVertex2f(xx, yy);
+    glVertex2f(xx + (1.0f / 32.0f), yy);
+    glVertex2f(xx + (1.0f / 32.0f), yy - (1.0f / 16.0f));
+    glVertex2f(xx, yy - (1.0f / 16.0f));
     glEnd();
 }
 
@@ -55,7 +58,6 @@ void update()
             draw_pixel(x, y);
         }
     }
-    glFlush();
 }
 
 void display()
@@ -65,8 +67,8 @@ void display()
     if (machine.draw_flag)
     {
         glClear(GL_COLOR_BUFFER_BIT);
-
         update();
+        glFlush();
 
         machine.draw_flag = false;
     }
