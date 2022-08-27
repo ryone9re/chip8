@@ -78,6 +78,7 @@ void chip8::emulate_cycle()
         }
         default:
             std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
+            exit_with_errmsg();
         }
         break;
     }
@@ -88,7 +89,8 @@ void chip8::emulate_cycle()
     }
 
     case 0x2000: {
-        stack[sp++] = pc;
+        stack[sp] = pc;
+        sp += 1;
         pc = (opcode & 0x0FFF);
         break;
     }
@@ -178,16 +180,18 @@ void chip8::emulate_cycle()
             BYTE x = (opcode & 0x0F00) >> 8;
             BYTE y = (opcode & 0x00F0) >> 4;
             if (V[y] > V[x])
-                V[0xF] = 1;
-            else
                 V[0xF] = 0;
+            else
+                V[0xF] = 1;
             V[x] -= V[y];
             pc += 2;
             break;
         }
         case 0x0006: {
             BYTE x = (opcode & 0x0F00) >> 8;
-            V[x] >>= 1;
+            BYTE y = (opcode & 0x00F0) >> 4;
+            V[0xF] = V[y] & 0x01;
+            V[x] = V[y] >> 1;
             pc += 2;
             break;
         }
@@ -195,21 +199,24 @@ void chip8::emulate_cycle()
             BYTE x = (opcode & 0x0F00) >> 8;
             BYTE y = (opcode & 0x00F0) >> 4;
             if (V[x] > V[y])
-                V[0xF] = 1;
-            else
                 V[0xF] = 0;
+            else
+                V[0xF] = 1;
             V[x] = V[y] - V[x];
             pc += 2;
             break;
         }
         case 0x000E: {
             BYTE x = (opcode & 0x0F00) >> 8;
-            V[x] <<= 1;
+            BYTE y = (opcode & 0x00F0) >> 4;
+            V[0xF] = V[y] & 0x80;
+            V[x] = V[y] << 1;
             pc += 2;
             break;
         }
         default:
             std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
+            exit_with_errmsg();
         }
         break;
     }
@@ -248,15 +255,24 @@ void chip8::emulate_cycle()
         V[0xF] = 0;
         for (BYTE i = 0; i < n; i++)
         {
+            if ((gfx[V[y] + i][V[x]] && (memory[I + i] & 0x80)) ||
+                (gfx[V[y] + i][V[x] + 1] && (memory[I + i] & 0x40)) ||
+                (gfx[V[y] + i][V[x] + 2] && (memory[I + i] & 0x20)) ||
+                (gfx[V[y] + i][V[x] + 3] && (memory[I + i] & 0x10)) ||
+                (gfx[V[y] + i][V[x] + 4] && (memory[I + i] & 0x08)) ||
+                (gfx[V[y] + i][V[x] + 5] && (memory[I + i] & 0x04)) ||
+                (gfx[V[y] + i][V[x] + 6] && (memory[I + i] & 0x02)) ||
+                (gfx[V[y] + i][V[x] + 7] && (memory[I + i] & 0x01)))
+                V[0xF] = 1;
+
             gfx[V[y] + i][V[x]] ^= ((memory[I + i] & 0x80) > 0);
             gfx[V[y] + i][V[x] + 1] ^= ((memory[I + i] & 0x40) > 0);
             gfx[V[y] + i][V[x] + 2] ^= ((memory[I + i] & 0x20) > 0);
             gfx[V[y] + i][V[x] + 3] ^= ((memory[I + i] & 0x10) > 0);
-
-            V[0xF] = (gfx[V[y] + i][V[x]] && ((memory[I + i] & 0x80) > 0)) > 0 ||
-                     (gfx[V[y] + i][V[x] + 1] && ((memory[I + i] & 0x40) > 0)) > 0 ||
-                     (gfx[V[y] + i][V[x] + 2] && ((memory[I + i] & 0x20) > 0)) > 0 ||
-                     (gfx[V[y] + i][V[x] + 3] && ((memory[I + i] & 0x10) > 0)) > 0;
+            gfx[V[y] + i][V[x] + 4] ^= ((memory[I + i] & 0x08) > 0);
+            gfx[V[y] + i][V[x] + 5] ^= ((memory[I + i] & 0x04) > 0);
+            gfx[V[y] + i][V[x] + 6] ^= ((memory[I + i] & 0x02) > 0);
+            gfx[V[y] + i][V[x] + 7] ^= ((memory[I + i] & 0x01) > 0);
         }
         draw_flag = true;
         pc += 2;
@@ -282,6 +298,7 @@ void chip8::emulate_cycle()
         }
         default:
             std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
+            exit_with_errmsg();
         }
         break;
     }
@@ -310,12 +327,14 @@ void chip8::emulate_cycle()
                         is_keypress = true;
                     }
                 }
-                if (is_keypress)
-                    pc += 2;
+                if (!is_keypress)
+                    return;
+                pc += 2;
                 break;
             }
             default:
                 std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
+                exit_with_errmsg();
             }
             break;
         }
@@ -337,14 +356,15 @@ void chip8::emulate_cycle()
             }
             case 0x000E: {
                 BYTE x = (opcode & 0x0F00) >> 8;
-                V[0xF] = (I + V[x]) > 0x0FFF;
                 I += V[x];
                 pc += 2;
                 break;
             }
             default:
                 std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
+                exit_with_errmsg();
             }
+            break;
         }
 
         case 0x0020: {
@@ -386,12 +406,14 @@ void chip8::emulate_cycle()
 
         default:
             std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
+            exit_with_errmsg();
         }
         break;
     }
 
     default:
         std::clog << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
+        exit_with_errmsg();
     }
 
     // Update timers
@@ -408,6 +430,7 @@ void chip8::emulate_cycle()
 
 void chip8::set_keys(BYTE k, BYTE status)
 {
+    key.fill(0);
     if (k == '1')
         key[0x1] = status;
     else if (k == '2')
