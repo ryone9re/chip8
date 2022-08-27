@@ -32,6 +32,9 @@ class chip8
     void emulate_cycle();
     void set_keys(BYTE key, BYTE status);
 
+    void push_stack(WORD ret);
+    WORD pop_stack();
+
     BYTE rand();
 };
 

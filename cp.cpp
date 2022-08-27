@@ -71,8 +71,7 @@ void chip8::emulate_cycle()
             break;
         }
         case 0x000E: {
-            sp -= 1;
-            pc = stack[sp];
+            pc = pop_stack();
             pc += 2;
             break;
         }
@@ -89,8 +88,7 @@ void chip8::emulate_cycle()
     }
 
     case 0x2000: {
-        stack[sp] = pc;
-        sp += 1;
+        push_stack(pc);
         pc = (opcode & 0x0FFF);
         break;
     }
@@ -463,6 +461,18 @@ void chip8::set_keys(BYTE k, BYTE status)
         key[0xB] = status;
     else if (k == 'v')
         key[0xF] = status;
+}
+
+void chip8::push_stack(WORD ret)
+{
+    stack[pc % 16] = ret;
+    pc++;
+}
+
+WORD chip8::pop_stack()
+{
+    pc--;
+    return (stack[pc % 16]);
 }
 
 BYTE chip8::rand()
