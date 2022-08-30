@@ -3,8 +3,8 @@
 #include <array>
 #include <iostream>
 
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
+using BYTE = unsigned char;
+using WORD = unsigned short;
 
 class chip8
 {
